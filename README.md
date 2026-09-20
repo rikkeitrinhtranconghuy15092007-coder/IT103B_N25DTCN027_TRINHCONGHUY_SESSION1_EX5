@@ -1,22 +1,22 @@
-# Phân tích Lỗi và Kiểm thử - Phân hệ Tính giá Giỏ hàng GrabRide/Food
+# Bài tập: Sửa lỗi tính tiền giỏ hàng
 
-## 1. Phân tích nguyên nhân gây lỗi
-Trong biểu thức `const deliveryFee = rawBaseDeliveryFee + rawDeliveryDistance * 4000`, hiện tượng lỗi xảy ra do sự kết hợp giữa **thứ tự ưu tiên của toán tử** và **cơ chế ép kiểu tự động (Type Coercion)** trong JavaScript:
+## 1. Tại sao ban đầu code lại tính ra số tiền khổng lồ?
 
-1. **Thứ tự ưu tiên toán tử:** Toán tử nhân (`*`) có mức độ ưu tiên cao hơn toán tử cộng (`+`). Do đó, phép tính `rawDeliveryDistance * 4000` được thực thi trước. 
-   - Lúc này `rawDeliveryDistance` đang là chuỗi `"3.2"`. Khi gặp toán tử `*`, JavaScript tự động ép kiểu chuỗi `"3.2"` thành số `3.2` để tính toán. Kết quả của phép nhân là số `12800`.
-2. **Hiện tượng cộng chuỗi (String Concatenation):** Tiếp theo, chương trình thực hiện phép cộng `rawBaseDeliveryFee + 12800`.
-   - Vì `rawBaseDeliveryFee` đang được khai báo là một chuỗi (`"16000"`), toán tử `+` sẽ đóng vai trò là **toán tử nối chuỗi** thay vì phép cộng toán học. 
-   - JavaScript tự động ép kiểu số `12800` thành chuỗi `"12800"` và nối vào đuôi, tạo ra chuỗi kết quả: `"16000" + "12800" = "1600012800"`.
-3. **Hiệu ứng dây chuyền:** Khi tính `finalPayment`, biến `foodTotalAfterDiscount` (giá trị số `81000`) cộng với `deliveryFee` (chuỗi `"1600012800"`). Một lần nữa, toán tử `+` lại thực hiện nối chuỗi, tạo ra số tiền khổng lồ: `"810001600012800"`.
+Khi tính toán, máy tính đã bị hiểu nhầm do dữ liệu đầu vào là dạng chữ thay vì số.
 
-**Cách khắc phục:** Cần sử dụng hàm `Number()` hoặc `parseFloat()`, `parseInt()` để ép các giá trị đầu vào (đang ở dạng chuỗi) về đúng kiểu dữ liệu Số (Number) trước khi đưa vào các biểu thức toán học.
+* **Bước 1 (Vẫn tính đúng):** Code lấy số km nhân tiền cước: `3.2 * 4000 = 12800`.
+* **Bước 2 (Bắt đầu sai):** Code lấy phí cơ bản cộng tiền cước vừa tính: `"16000" + 12800`. 
+Do `"16000"` ban đầu đang ở dạng chữ, nên khi gặp dấu cộng (+), máy tính không làm toán mà thực hiện hành động **ghép chữ**. Nó dán 2 số lại với nhau thành: `"1600012800"`.
+* **Bước 3 (Sai dây chuyền):** Khi tính tổng hóa đơn, máy tính lấy tiền món ăn cộng với chuỗi chữ `"1600012800"`, tiếp tục dán lại thành số khổng lồ `"810001600012800"`.
 
-## 2. Bảng Test Cases đối chứng
+**Cách khắc phục:** 
+Em đã dùng lệnh `Number()` bao quanh các biến chữ để ép nó biến thành biến số học (ví dụ: `Number("16000")` sẽ ra số `16000`). Từ đó máy tính sẽ thực hiện phép cộng trừ bình thường.
 
-Dưới đây là bảng kiểm thử (Test Cases) để đối chiếu giữa kết quả lúc mã nguồn bị lỗi và kết quả sau khi đã sửa chuẩn.
+---
 
-| ID | Trường hợp kiểm thử (Test Case) | Dữ liệu đầu vào (Input) | Kết quả lỗi (Thực tế) | Kết quả đúng (Mong đợi) |
-|:---|:---|:---|:---|:---|
-| TC-01 | Kiểm tra tính phí với cự ly lẻ (dữ liệu mặc định của bài toán) | `rawBaseDeliveryFee = "16000"`<br>`rawDeliveryDistance = "3.2"`<br>`rawItemPrice = "45000"`<br>`rawItemQuantity = "2"` | Tiền món: 81000 VND<br>Phí giao hàng: 1600012800 VND<br>**Tổng: 810001600012800 VND** | Tiền món: 81000 VND<br>Phí giao hàng: 28800 VND<br>**Tổng: 109800 VND** |
-| TC-02 | Kiểm tra tính phí với cự ly nguyên (cự ly 5km, phí cơ bản 15000) | `rawBaseDeliveryFee = "15000"`<br>`rawDeliveryDistance = "5"`<br>`rawItemPrice = "50000"`<br>`rawItemQuantity = "1"` | Tiền món: 45000 VND<br>Phí giao hàng: 1500020000 VND<br>**Tổng: 450001500020000 VND** | Tiền món: 45000 VND<br>Phí giao hàng: 35000 VND<br>**Tổng: 80000 VND** |
+## 2. Bảng kết quả chạy thử (Test Cases)
+
+| Tình huống | Dữ liệu ban đầu | Kết quả bị lỗi ban đầu | Kết quả đúng (sau khi sửa code) |
+| :--- | :--- | :--- | :--- |
+| **1. Đặt khoảng cách lẻ (3.2 km)** | Phí cơ bản: "16000"<br>Số km: "3.2"<br>Giá món: "45000"<br>Số lượng: "2" | Tiền món: 81000 VND<br>Phí ship: 1600012800 VND<br>**Tổng bill: 810001600012800 VND** | Tiền món: 81000 VND<br>Phí ship: 28800 VND<br>**Tổng bill: 109800 VND** |
+| **2. Đặt khoảng cách chẵn (5 km)** | Phí cơ bản: "15000"<br>Số km: "5"<br>Giá món: "50000"<br>Số lượng: "1" | Tiền món: 45000 VND<br>Phí ship: 1500020000 VND<br>**Tổng bill: 450001500020000 VND** | Tiền món: 45000 VND<br>Phí ship: 35000 VND<br>**Tổng bill: 80000 VND** |
