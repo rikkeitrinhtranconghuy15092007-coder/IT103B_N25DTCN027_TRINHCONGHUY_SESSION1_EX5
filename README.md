@@ -1,22 +1,18 @@
-# Bài tập: Sửa lỗi tính tiền giỏ hàng
+## 1. Phân tích lỗi 
+Nguyên nhân dẫn đến hóa trị giá hàng trăm triệu đồng như nằm ở chỗ java đang hiểu biểu thức const deliveryFee = `rawBaseDeliveryFee + rawDeliveryDistance * 4000` :
+ 1. Thì sẽ ưu tiên toán từ Nhân trước vò nó có độ ưu tiên cao hơn so với + Lên là biểu thức nhân của phép tính sẽ được thực hiện trước 
 
-## 1. Tại sao ban đầu code lại tính ra số tiền khổng lồ?
+ 2. java còn tự động ép kiểu chuỗi để tính toán phép nhân lên kết quả thành 12800
 
-Khi tính toán, máy tính đã bị hiểu nhầm do dữ liệu đầu vào là dạng chữ thay vì số.
+ 3. lỗi cộng chuỗi: biểu thức lúc này trở thành '"16000" + 12800' vì o hàng đầu tiên của nó là chuỗi thhàn ra toán tử '+' không thực hiện tính tônghr mà đóng vai trò là toán tử nối chuỗi khi đó nó sẽ tạo thành 1 chuỗi số dài chứ nó không có '+' vào 
+4. lan chuyền lỗi: khi tính tổng cuối cùng, thì số'81000' tiếp tục làm ra chuỗi ớn lên thành ra nó lại thành 1 dãy số cực kì dài 
 
-* **Bước 1 (Vẫn tính đúng):** Code lấy số km nhân tiền cước: `3.2 * 4000 = 12800`.
-* **Bước 2 (Bắt đầu sai):** Code lấy phí cơ bản cộng tiền cước vừa tính: `"16000" + 12800`. 
-Do `"16000"` ban đầu đang ở dạng chữ, nên khi gặp dấu cộng (+), máy tính không làm toán mà thực hiện hành động **ghép chữ**. Nó dán 2 số lại với nhau thành: `"1600012800"`.
-* **Bước 3 (Sai dây chuyền):** Khi tính tổng hóa đơn, máy tính lấy tiền món ăn cộng với chuỗi chữ `"1600012800"`, tiếp tục dán lại thành số khổng lồ `"810001600012800"`.
+## 2. Bảng kiểm thử đối chứng (Test Cases)
 
-**Cách khắc phục:** 
-Em đã dùng lệnh `Number()` bao quanh các biến chữ để ép nó biến thành biến số học (ví dụ: `Number("16000")` sẽ ra số `16000`). Từ đó máy tính sẽ thực hiện phép cộng trừ bình thường.
-
----
-
-## 2. Bảng kết quả chạy thử (Test Cases)
-
-| Tình huống | Dữ liệu ban đầu | Kết quả bị lỗi ban đầu | Kết quả đúng (sau khi sửa code) |
+| Trường hợp kiểm thử (Test Case) | Dữ liệu đầu vào (Input) | Kết quả sai thực tế (Bug) | Kết quả đúng mong đợi (Expected) |
 | :--- | :--- | :--- | :--- |
-| **1. Đặt khoảng cách lẻ (3.2 km)** | Phí cơ bản: "16000"<br>Số km: "3.2"<br>Giá món: "45000"<br>Số lượng: "2" | Tiền món: 81000 VND<br>Phí ship: 1600012800 VND<br>**Tổng bill: 810001600012800 VND** | Tiền món: 81000 VND<br>Phí ship: 28800 VND<br>**Tổng bill: 109800 VND** |
-| **2. Đặt khoảng cách chẵn (5 km)** | Phí cơ bản: "15000"<br>Số km: "5"<br>Giá món: "50000"<br>Số lượng: "1" | Tiền món: 45000 VND<br>Phí ship: 1500020000 VND<br>**Tổng bill: 450001500020000 VND** | Tiền món: 45000 VND<br>Phí ship: 35000 VND<br>**Tổng bill: 80000 VND** |
+| **#1: Tính cước phí giao hàng** (Phí cơ bản + Phí theo km) | `rawBaseDeliveryFee = "16000"`<br>`rawDeliveryDistance = "3.2"` | `"1600012800" VND` | `28800 VND` |
+| **#2: Tính tổng thanh toán** (Tiền món đã giảm + Phí giao hàng) | `foodTotalAfterDiscount = 81000`<br>`deliveryFee = "1600012800"` | `"810001600012800" VND` | `109800 VND` |
+
+## 3. Cách khắc phục
+Ép kiểu tường minh (Explicit Type Coercion) biến chuỗi thành số học bằng hàm `Number()` trước khi thực hiện phép tính có chứa dấu `+`.
